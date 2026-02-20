@@ -46,10 +46,6 @@ logger = logging.getLogger("trading_bot.web")
 app = Flask(__name__, template_folder="templates", static_folder="static")
 app.secret_key = os.urandom(24)
 
-# Simple in-process order history (resets on restart — fine for testnet demo)
-_order_history: list[dict] = []
-
-
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _make_client() -> BinanceFuturesClient:
@@ -63,42 +59,45 @@ def _make_client() -> BinanceFuturesClient:
     return BinanceFuturesClient(api_key, api_secret)
 
 
-def _record_order(order: dict, order_type: str) -> None:
-    """Append an order to the in-process history list."""
-    _order_history.insert(
-        0,
-        {
-            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "orderId": order.get("orderId", "—"),
-            "symbol": order.get("symbol", "—"),
-            "side": order.get("side", "—"),
-            "type": order_type,
-            "qty": order.get("origQty", "—"),
-            "price": order.get("price") or order.get("avgPrice") or "—",
-            "status": order.get("status", "—"),
-        },
-    )
+def _format_api_time(ts: int) -> str:
+    """Convert Binance millisecond timestamp to readable string."""
+    return datetime.fromtimestamp(ts / 1000).strftime("%Y-%m-%d %H:%M:%S")
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
 
 @app.route("/")
 def dashboard():
-    """Main dashboard: account overview + recent order history."""
+    """Main dashboard: real-time account overview + real history from Binance."""
     account_data = None
+    real_history = []
     error = None
     try:
         with _make_client() as client:
             raw = client.get_account_info()
-        assets = [
-            a for a in raw.get("assets", [])
-            if float(a.get("walletBalance", 0)) > 0
-        ]
-        positions = [
-            p for p in raw.get("positions", [])
-            if float(p.get("positionAmt", 0)) != 0
-        ]
-        account_data = {"assets": assets, "positions": positions}
+            # Fetch real order history from Binance (requires a symbol, defaulting to BTCUSDT)
+            try:
+                history = client.get_all_orders(symbol="BTCUSDT", limit=15)
+            except Exception:
+                history = []
+            
+            # Fetch positions
+            assets = [a for a in raw.get("assets", []) if float(a.get("walletBalance", 0)) > 0]
+            positions = [p for p in raw.get("positions", []) if float(p.get("positionAmt", 0)) != 0]
+            account_data = {"assets": assets, "positions": positions}
+
+            for o in history:
+                real_history.append({
+                    "timestamp": _format_api_time(o.get("time", 0)),
+                    "orderId": o.get("orderId"),
+                    "symbol": o.get("symbol"),
+                    "side": o.get("side"),
+                    "type": o.get("type"),
+                    "qty": o.get("origQty"),
+                    "price": o.get("price") if o.get("price") != "0" else o.get("avgPrice"),
+                    "status": o.get("status")
+                })
+
     except ValueError as exc:
         error = str(exc)
     except (BinanceAPIError, ConnectionError) as exc:
@@ -109,7 +108,7 @@ def dashboard():
         "dashboard.html",
         account=account_data,
         error=error,
-        orders=_order_history[:20],
+        orders=real_history,
         now=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
     )
 
@@ -164,7 +163,6 @@ def submit_order():
         flash(f"Network error: {exc}", "error")
         return redirect(url_for("order_form"))
 
-    _record_order(response, order_type)
     return render_template("result.html", order=response, order_type=order_type)
 
 

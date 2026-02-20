@@ -34,9 +34,9 @@
     </div>
 
     <div class="stat-card">
-        <div class="label">Orders Today</div>
+        <div class="label">Recent Orders</div>
         <div class="value">{{ orders|length }}</div>
-        <div class="sub">Session order count</div>
+        <div class="sub">Latest history from Binance</div>
     </div>
 </div>
 
@@ -106,8 +106,8 @@
 <!-- ── Recent order history ────────────────────────────────────────────── -->
 <div class="card">
     <div class="flex justify-between items-center" style="margin-bottom:.75rem;">
-        <p class="card-title" style="margin-bottom:0;">Recent Orders <span class="text-muted"
-                style="font-weight:400;text-transform:none;letter-spacing:0;">(this session)</span></p>
+        <p class="card-title" style="margin-bottom:0;">Recent Activity <span class="text-muted"
+                style="font-weight:400;text-transform:none;letter-spacing:0;">(live from API)</span></p>
         <a href="{{ url_for('order_form') }}" class="btn btn-primary btn-sm">+ Place Order</a>
     </div>
 
@@ -159,7 +159,7 @@
     {% else %}
     <div class="empty-state">
         <div class="empty-icon">📋</div>
-        No orders placed yet this session.<br />
+        No recent orders found on your account.<br />
         <a href="{{ url_for('order_form') }}" style="margin-top:.5rem;display:inline-block;">Place your first order
             →</a>
     </div>

@@ -171,21 +171,48 @@ def cmd_account(args: argparse.Namespace, client: BinanceFuturesClient) -> None:
     print()
 
 
-def cmd_price(args: argparse.Namespace, client: BinanceFuturesClient) -> None:
-    """Fetch and display the latest price for a symbol."""
-    logger = __import__("logging").getLogger("trading_bot.cli")
-    try:
-        symbol = validate_symbol(args.symbol)
-        data = client.get_symbol_price(symbol)
-    except ValueError as exc:
-        _die(str(exc))
-    except BinanceAPIError as exc:
-        logger.error("API error fetching price: %s", exc)
-        _die(str(exc))
-    except ConnectionError as exc:
-        _die(str(exc))
-
     print(f"\n  Latest price for {data['symbol']}: {data['price']} USDT\n")
+
+
+def cmd_menu(client: BinanceFuturesClient) -> None:
+    """Interactive loop for placing orders and checking account info."""
+    while True:
+        print("\n  ── INTERACTIVE MENU ──────────────────────────────")
+        print("  1. Place MARKET Buy/Sell")
+        print("  2. Place LIMIT Buy/Sell")
+        print("  3. Check Account Balance / Positions")
+        print("  4. View Symbol Price")
+        print("  0. Exit Interactive Mode")
+        print("  ──────────────────────────────────────────────────")
+
+        choice = input("\n  Select an option [0-4]: ").strip()
+
+        if choice == "0":
+            print("\n  Exiting menu...")
+            break
+        elif choice == "1":
+            # Market Order
+            sym = input("  Symbol (e.g. BTCUSDT): ").strip()
+            side = input("  Side (BUY/SELL): ").strip().upper()
+            qty = input("  Quantity: ").strip()
+            # Wrap as namespace to reuse cmd_place_order
+            ns = argparse.Namespace(command="place-order", symbol=sym, side=side, type="MARKET", qty=qty, price=None, stop_price=None)
+            cmd_place_order(ns, client)
+        elif choice == "2":
+            # Limit Order
+            sym = input("  Symbol (e.g. BTCUSDT): ").strip()
+            side = input("  Side (BUY/SELL): ").strip().upper()
+            qty = input("  Quantity: ").strip()
+            prc = input("  Price: ").strip()
+            ns = argparse.Namespace(command="place-order", symbol=sym, side=side, type="LIMIT", qty=qty, price=prc, stop_price=None, tif="GTC")
+            cmd_place_order(ns, client)
+        elif choice == "3":
+            cmd_account(None, client)  # type: ignore
+        elif choice == "4":
+            sym = input("  Symbol (e.g. BTCUSDT): ").strip()
+            cmd_price(argparse.Namespace(symbol=sym), client)
+        else:
+            print("  Invalid choice. Try again.")
 
 
 # ── Argument parser ────────────────────────────────────────────────────────────
@@ -255,9 +282,11 @@ def build_parser() -> argparse.ArgumentParser:
     # ── account ────────────────────────────────────────────────────────────────
     sub.add_parser("account", help="Show futures account balances and open positions")
 
-    # ── price ──────────────────────────────────────────────────────────────────
     price_p = sub.add_parser("price", help="Fetch the latest mark price for a symbol")
     price_p.add_argument("--symbol", required=True, help="Trading pair, e.g. BTCUSDT")
+
+    # ── menu ───────────────────────────────────────────────────────────────────
+    sub.add_parser("menu", help="Start the interactive menu system (bonus feature)")
 
     return parser
 
@@ -283,6 +312,8 @@ def main() -> None:
             cmd_account(args, client)
         elif args.command == "price":
             cmd_price(args, client)
+        elif args.command == "menu":
+            cmd_menu(client)
         else:
             parser.print_help()
 

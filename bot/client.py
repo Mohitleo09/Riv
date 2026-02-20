@@ -151,6 +151,14 @@ class BinanceFuturesClient:
         logger.info("Fetching price for %s …", symbol)
         return self._get("/ticker/price", params={"symbol": symbol})
 
+    def get_all_orders(self, symbol: str | None = None, limit: int = 20) -> list[dict]:
+        """Fetch all orders (completed or open)."""
+        params: dict[str, Any] = {"limit": limit}
+        if symbol:
+            params["symbol"] = symbol
+        logger.info("Fetching orders (symbol=%s) …", symbol)
+        return self._get("/allOrders", params=params)  # type: ignore
+
     def place_order(self, **kwargs: Any) -> dict:
         """
         Place a new futures order.
