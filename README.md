@@ -6,28 +6,29 @@
 
 ---
 
-## ✨ What's New (Latest Features)
+### ✨ What's New (Latest Features)
 
-### 🔥 Trending Tags Sidebar *(New!)*
-The feed page now has a smart sidebar that **automatically extracts keywords** from all blog posts and ranks them by popularity (frequency + likes). Clicking any tag instantly filters the feed — no page reload needed.
+### 🌍 Live Trends & Hashtags *(New!)*
+The feed sidebar now features live, production-ready trends fetched directly from **Reddit r/all** and **Hacker News**. Individual **hashtag chips** are dynamically generated from current viral topics, allowing you to filter the feed with one click.
 
-### 📊 Platform Stats Widget *(New!)*
-A live statistics panel on the feed sidebar shows the total number of posts, unique writers, and total likes across the platform.
+### 😊 Premium Emoji Picker *(New!)*
+Implemented a Twitter/Slack-style emoji picker using `@emoji-mart`. It features:
+- **600+ emojis** across all standard categories (Flags, Food, Travel, etc.)
+- **Search engine** with keyword indexing.
+- **Recently used** tracking.
+- **Cursor-aware insertion** in both title and content fields.
 
-### ⏱ Reading Time Estimator *(New!)*
-Every blog card now shows an estimated reading time (e.g., "3 min read") calculated from the word count. Writers also see a **live reading time indicator** while typing their post.
+### 📊 Clean Profile Stats *(New!)*
+Replaced bulky cards with a **minimalist horizontal stats bar** on the profile page. It tracks your Posts, Likes, Streak, and Engagement Score at a glance in a clean, unified row.
 
-### ⚡ Writer Insights on Profile *(New!)*
-The Profile page now has a dedicated analytics section with 3 cards:
-- **Writing Streak** — counts how many consecutive days you've been active.
-- **Engagement Engine** — a weighted score (Comments are 3× more valuable than Likes).
-- **Global Rank** — shows your standing among the writers on the platform.
+### ⏱ Reading Time Estimator
+Every blog card shows an estimated reading time. Writers also see a **live reading time indicator** while typing their post.
 
-### 🛡️ Safe Blog Deletion *(Fixed!)*
-Deleting a blog that has likes or comments no longer causes a server error. The system now safely removes all related data (likes, comment likes, comments) in the correct order before deleting the blog.
+### 🛡️ Safe Blog Deletion
+Deleting a blog now safely cascades to likes and comments, preventing 500 errors.
 
-### 🚀 Instant Blog Publishing *(Fixed!)*
-Publishing a blog no longer times out. The background summary generator (AI task) now runs asynchronously — you get redirected immediately after publishing, and the summary is generated quietly in the background.
+### 🚀 Instant Blog Publishing
+Publishing is now immediate. AI summary generation moved to a background worker to prevent timeouts.
 
 ---
 
