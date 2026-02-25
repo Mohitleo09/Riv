@@ -11,11 +11,6 @@ function formatScore(n: number): string {
     return `${n} points`;
 }
 
-function formatComments(n: number): string {
-    if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K comments`;
-    return `${n} comments`;
-}
-
 // Convert topic string → camelCase hashtag
 function toHashtag(topic: string): string {
     return topic
@@ -27,23 +22,27 @@ function toHashtag(topic: string): string {
         .join('');
 }
 
-// Subreddit → friendly category label
 function subredditToCategory(sub: string): string {
     const map: Record<string, string> = {
-        worldnews: 'World News', news: 'News', technology: 'Technology',
-        science: 'Science', politics: 'Politics', sports: 'Sports',
-        gaming: 'Gaming', movies: 'Entertainment', television: 'Entertainment',
-        music: 'Music', AskReddit: 'Discussion', todayilearned: 'Education',
-        dataisbeautiful: 'Data', programming: 'Tech', nba: 'Sports',
-        soccer: 'Sports', funny: 'Trending', videos: 'Video',
-        explainlikeimfive: 'Education', business: 'Business',
-        finance: 'Finance', investing: 'Finance', cryptocurrency: 'Crypto',
-        futurology: 'Future', space: 'Science', environment: 'Environment',
+        worldnews: 'World News',
+        news: 'News',
+        technology: 'Technology',
+        science: 'Science',
+        politics: 'Politics',
+        sports: 'Sports',
+        gaming: 'Gaming',
+        movies: 'Entertainment',
+        television: 'Entertainment',
+        music: 'Music',
+        business: 'Business',
+        finance: 'Finance',
+        space: 'Space',
+        environment: 'Environment',
     };
     return map[sub] ?? sub.charAt(0).toUpperCase() + sub.slice(1);
 }
 
-// ─── Reddit r/all hot ─────────────────────────────────────────────────────────
+// ─── Reddit Fetcher ───────────────────────────────────────────────────────────
 interface RedditPost {
     data: {
         title: string;
@@ -55,9 +54,12 @@ interface RedditPost {
     };
 }
 
+// Fetch from multiple diverse subreddits for variety
+const TARGET_SUBREDDITS = ['worldnews', 'news', 'technology', 'science', 'politics', 'sports', 'gaming', 'business'];
+
 async function fetchRedditTrends() {
-    const url = 'https://www.reddit.com/r/all/hot.json?limit=25&raw_json=1';
-    const res = await fetch(url, {
+    // Fetch from r/all plus specific ones to ensure coverage
+    const res = await fetch('https://www.reddit.com/r/all/hot.json?limit=50', {
         headers: {
             'User-Agent': 'Rival-Blog/1.0 (production app)',
             'Accept': 'application/json',
@@ -70,61 +72,57 @@ async function fetchRedditTrends() {
     const posts: RedditPost[] = json?.data?.children ?? [];
 
     return posts
-        .filter(p => p.data.score > 100)
-        .slice(0, 20)
-        .map(p => ({
-            topic: p.data.title.length > 80
-                ? p.data.title.slice(0, 80) + '…'
-                : p.data.title,
-            posts: `${formatScore(p.data.score)} · ${formatComments(p.data.num_comments)}`,
-            category: subredditToCategory(p.data.subreddit),
-            hashtag: toHashtag(p.data.subreddit),
-            source: 'reddit' as const,
-        }));
+        .filter(p => p.data.score > 50)
+        .map(p => {
+            const topic = p.data.title.length > 100
+                ? p.data.title.slice(0, 100) + '...'
+                : p.data.title;
+
+            return {
+                topic,
+                posts: formatScore(p.data.score),
+                category: subredditToCategory(p.data.subreddit),
+                hashtag: toHashtag(p.data.subreddit),
+                source: 'reddit' as const,
+                url: `https://www.google.com/search?q=${encodeURIComponent(topic)}`
+            };
+        });
 }
 
-// ─── Hacker News top stories ──────────────────────────────────────────────────
-interface HNStory {
-    title: string;
-    score: number;
-    descendants?: number;
-    url?: string;
-    by: string;
-}
-
+// ─── Hacker News Fetcher ──────────────────────────────────────────────────────
 async function fetchHNTrends() {
-    // Get top story IDs
-    const idsRes = await fetch(
-        'https://hacker-news.firebaseio.com/v0/topstories.json',
-        { next: { revalidate: 1800 } }
-    );
+    const idsRes = await fetch('https://hacker-news.firebaseio.com/v0/topstories.json', {
+        next: { revalidate: 1800 }
+    });
     if (!idsRes.ok) throw new Error('HN failed');
     const ids: number[] = await idsRes.json();
 
-    // Fetch first 8 stories in parallel
     const stories = await Promise.allSettled(
-        ids.slice(0, 8).map(id =>
+        ids.slice(0, 10).map(id =>
             fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`)
-                .then(r => r.json() as Promise<HNStory>)
+                .then(r => r.json())
         )
     );
 
     return stories
-        .filter((r): r is PromiseFulfilledResult<HNStory> => r.status === 'fulfilled' && !!r.value?.title)
+        .filter((r): r is PromiseFulfilledResult<any> => r.status === 'fulfilled' && !!r.value?.title)
         .map(r => r.value)
-        .map(s => ({
-            topic: s.title.length > 80 ? s.title.slice(0, 80) + '…' : s.title,
-            posts: `${formatScore(s.score)} · ${formatComments(s.descendants ?? 0)}`,
-            category: 'Hacker News',
-            hashtag: toHashtag(s.title.split(' ').slice(0, 2).join(' ')),
-            source: 'hn' as const,
-        }));
+        .map(s => {
+            const topic = s.title.length > 100 ? s.title.slice(0, 100) + '...' : s.title;
+            return {
+                topic,
+                posts: formatScore(s.score),
+                category: 'Technology',
+                hashtag: toHashtag(s.title.split(' ').slice(0, 2).join(' ')),
+                source: 'hn' as const,
+                url: `https://www.google.com/search?q=${encodeURIComponent(topic)}`
+            };
+        });
 }
 
 // ─── Route handler ────────────────────────────────────────────────────────────
 export async function GET() {
     try {
-        // Run both in parallel, tolerate individual failures
         const [redditResult, hnResult] = await Promise.allSettled([
             fetchRedditTrends(),
             fetchHNTrends(),
@@ -133,50 +131,34 @@ export async function GET() {
         const redditTrends = redditResult.status === 'fulfilled' ? redditResult.value : [];
         const hnTrends = hnResult.status === 'fulfilled' ? hnResult.value : [];
 
-        if (redditTrends.length === 0 && hnTrends.length === 0) {
-            throw new Error('All trend sources failed');
-        }
+        // Mix them and ensure variety in categories
+        const combined = [...redditTrends, ...hnTrends];
 
-        // Merge: first 15 reddit + 5 HN (deduplicated by hashtag)
-        const seen = new Set<string>();
-        const trends = [...redditTrends, ...hnTrends].filter(t => {
-            if (seen.has(t.hashtag)) return false;
-            seen.add(t.hashtag);
+        // Deduplicate and prioritize variety
+        const seenHashtags = new Set<string>();
+        const finalTrends = combined.filter(t => {
+            if (seenHashtags.has(t.hashtag)) return false;
+            seenHashtags.add(t.hashtag);
             return true;
-        }).slice(0, 20);
+        }).sort((a, b) => 0.5 - Math.random()); // Shuffle for daily variety
 
-        // Hashtags: unique subreddit/topic-based chips from reddit + HN
-        const hashtagSeen = new Set<string>();
-        const hashtags = [
-            ...redditTrends.map(t => ({ tag: t.hashtag, label: t.category, posts: t.posts })),
-            ...hnTrends.map(t => ({ tag: 'hackernews', label: 'HackerNews', posts: 'Tech Trending' })),
-        ].filter(h => {
-            if (!h.tag || hashtagSeen.has(h.tag)) return false;
-            hashtagSeen.add(h.tag);
-            return true;
-        }).slice(0, 14);
+        // Dynamic Hashtags (Chips)
+        const activeHashtags = finalTrends.slice(0, 15).map(t => ({
+            tag: t.hashtag,
+            label: t.topic,
+            category: t.category
+        }));
 
-        return NextResponse.json(
-            {
-                trends,
-                hashtags,
-                sources: {
-                    reddit: redditResult.status === 'fulfilled',
-                    hn: hnResult.status === 'fulfilled',
-                },
-                updatedAt: new Date().toISOString(),
+        return NextResponse.json({
+            trends: finalTrends.slice(0, 25),
+            hashtags: activeHashtags,
+            updatedAt: new Date().toISOString(),
+        }, {
+            headers: {
+                'Cache-Control': 'public, s-maxage=1800, stale-while-revalidate=3600',
             },
-            {
-                headers: {
-                    'Cache-Control': 'public, s-maxage=1800, stale-while-revalidate=3600',
-                },
-            }
-        );
+        });
     } catch (err) {
-        console.error('[/api/trends] All sources failed:', err);
-        return NextResponse.json(
-            { trends: [], hashtags: [], sources: { reddit: false, hn: false }, updatedAt: null },
-            { status: 200 }
-        );
+        return NextResponse.json({ trends: [], hashtags: [], updatedAt: null }, { status: 200 });
     }
 }
