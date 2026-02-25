@@ -57,8 +57,8 @@ export function EmojiPicker({ onSelect, onClose }: EmojiPickerProps) {
                 <Picker
                     data={emojiData}
                     onEmojiSelect={(emoji: { native: string }) => onSelect(emoji.native)}
-                    theme="dark"
-                    set="twitter"
+                    theme="light"
+                    set="native"
                     previewPosition="none"
                     skinTonePosition="search"
                     maxFrequentRows={2}
