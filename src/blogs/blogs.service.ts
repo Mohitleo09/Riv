@@ -25,12 +25,10 @@ export class BlogsService {
         });
 
         if (blog.isPublished) {
-            try {
-                await this.blogQueue.add('generate-summary', { blogId: blog.id });
-            } catch (error) {
-                console.error('Failed to add blog task to queue:', error);
-                // We don't throw here so the user still sees a success message
-            }
+            // FIRE AND FORGET: Don't await this so the API responds instantly
+            this.blogQueue.add('generate-summary', { blogId: blog.id }).catch(err => {
+                console.error('Background task failed to queue:', err);
+            });
         }
 
         return blog;
@@ -53,11 +51,10 @@ export class BlogsService {
         });
 
         if (updateBlogDto.isPublished === true && !blog.isPublished) {
-            try {
-                await this.blogQueue.add('generate-summary', { blogId: blog.id });
-            } catch (error) {
-                console.error('Failed to add blog task to queue during update:', error);
-            }
+            // FIRE AND FORGET
+            this.blogQueue.add('generate-summary', { blogId: blog.id }).catch(err => {
+                console.error('Background task failed to queue during update:', err);
+            });
         }
 
         return updatedBlog;
