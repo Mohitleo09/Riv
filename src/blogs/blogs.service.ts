@@ -25,7 +25,12 @@ export class BlogsService {
         });
 
         if (blog.isPublished) {
-            await this.blogQueue.add('generate-summary', { blogId: blog.id });
+            try {
+                await this.blogQueue.add('generate-summary', { blogId: blog.id });
+            } catch (error) {
+                console.error('Failed to add blog task to queue:', error);
+                // We don't throw here so the user still sees a success message
+            }
         }
 
         return blog;
@@ -48,7 +53,11 @@ export class BlogsService {
         });
 
         if (updateBlogDto.isPublished === true && !blog.isPublished) {
-            await this.blogQueue.add('generate-summary', { blogId: blog.id });
+            try {
+                await this.blogQueue.add('generate-summary', { blogId: blog.id });
+            } catch (error) {
+                console.error('Failed to add blog task to queue during update:', error);
+            }
         }
 
         return updatedBlog;

@@ -24,13 +24,19 @@ import { BlogsModule } from './blogs/blogs.module';
         BullModule.forRootAsync({
             imports: [ConfigModule],
             inject: [ConfigService],
-            useFactory: (config: ConfigService) => ({
-                connection: {
-                    host: config.get('REDIS_HOST', 'localhost'),
-                    port: config.get('REDIS_PORT', 6379),
-                    password: config.get('REDIS_PASSWORD'),
-                },
-            }),
+            useFactory: (config: ConfigService) => {
+                const redisUrl = config.get('REDIS_URL');
+                if (redisUrl) {
+                    return { connection: redisUrl };
+                }
+                return {
+                    connection: {
+                        host: config.get('REDIS_HOST', 'localhost'),
+                        port: parseInt(config.get('REDIS_PORT', '6379'), 10),
+                        password: config.get('REDIS_PASSWORD'),
+                    },
+                };
+            },
         }),
         ThrottlerModule.forRoot([{
             ttl: 60000,
