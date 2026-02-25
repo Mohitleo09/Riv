@@ -1,168 +1,110 @@
-A clean, production-grade Python application for placing orders on the **Binance Futures Testnet (USDT-M)**.  
-Supports MARKET, LIMIT, and STOP\_MARKET orders with two interfaces: a **CLI** and a **web dashboard**.
+# Rival - Modern Blog Platform
+
+Rival is a production-grade, full-stack blog platform designed for minimalist, long-form creative writing. Built with a focus on architecture, type safety, and real-time feel.
+
+## 🚀 Key Features
+
+- **Consolidated Architecture**: Unified Next.js 15 and NestJS codebase.
+- **Advanced Authentication**: Dual-token strategy (Access + Refresh tokens) with rotation and server-side revocation.
+- **RBAC (Role-Based Access Control)**: Granular permission management with roles (USER, ADMIN).
+- **Social Interaction**: Real-time liked-by-me states and nested comment threads with optimistic UI.
+- **Async Processing**: BullMQ/Redis for background summarization and potential email tasks.
+- **Type Safety**: Shared domain models between backend and frontend.
 
 ---
 
-## 🚨 CRITICAL: API Key Configuration
+## 🏁 Setup Instructions
 
-**This application will NOT function without a valid Binance Futures Testnet API Key and Secret.**
+### 1. Requirements
+Ensure you have **Node.js (v20+)** and **Docker Desktop** installed.
 
-### What happens if API keys are missing?
-- **Authentication Failure:** Every request to place an order, view your balance, or see open positions will be rejected by Binance.
-- **CLI Errors:** The CLI will immediately stop and print a descriptive error message if keys are not found in your `.env` file.
-- **Web UI Errors:** The dashboard will display a red error banner, and order forms will fail to submit.
-- **Security:** Always use the `.env` file for your keys. **NEVER** hardcode your keys directly into the source code or commit the `.env` file to GitHub, as this exposes your account to theft.
-
-> **Note on Submission Credentials:** The API keys have not been pre-configured in this submission because the Binance Testnet currently requires identity verification and a deposit for key generation. However, the project is fully implemented and tested; once valid API credentials are added to the `.env` file, all features (ordering, account info, and history) will function correctly as requested.
-
----
-
-## Project Structure
-
-```
-Trading_bot/
-├── bot/
-│   ├── __init__.py
-│   ├── client.py          # Binance REST client (HMAC signing, HTTP, errors)
-│   ├── orders.py          # Order logic (MARKET / LIMIT / STOP_MARKET)
-│   ├── validators.py      # Input validation (symbol, side, qty, price …)
-│   └── logging_config.py  # Rotating file + coloured console logging
-├── web/
-│   ├── __init__.py
-│   ├── app.py             # Flask web application
-│   ├── static/
-│   │   └── style.css      # Dark-theme design system
-│   └── templates/
-│       ├── base.html      # Shared layout (sidebar, topbar, flash messages)
-│       ├── dashboard.html # Account overview + order history
-│       ├── order.html     # Place-order form (live price ticker)
-│       └── result.html    # Order confirmation page
-├── logs/
-│   └── trading_bot.log    # Generated at runtime
-├── cli.py                 # CLI entry point (argparse)
-├── server.py              # Web UI entry point (Flask)
-├── .env.example           # Credential template
-├── requirements.txt
-└── README.md
-```
-
----
-
-## Setup
-
-### 1 — Clone / download
-
-```bash
-git clone <repo-url>
-cd Trading_bot
-```
-
-### 2 — Create a virtual environment
-
-```bash
-python -m venv .venv
-
-# Windows
-.venv\Scripts\activate
-
-# macOS / Linux
-source .venv/bin/activate
-```
-
-### 3 — Install dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### 4 — Configure credentials
-
-```bash
-copy .env.example .env       # Windows
-cp  .env.example .env        # macOS / Linux
-```
-
-Edit `.env`:
-
+### 2. Environment Setup
+Create a `.env` file in the root directory:
 ```env
-BINANCE_API_KEY=<your_testnet_api_key>
-BINANCE_API_SECRET=<your_testnet_api_secret>
-PORT=5000
-FLASK_DEBUG=false
+# Database
+DATABASE_URL="postgresql://user:password@localhost:5432/rival_db?schema=public"
+
+# Redis (for BullMQ)
+REDIS_HOST="localhost"
+REDIS_PORT=6379
+
+# JWT
+JWT_SECRET="your-super-secret-key"
+
+# Next.js Public
+NEXT_PUBLIC_API_URL="http://localhost:3001"
 ```
 
-> **How to get testnet credentials:**  
-> Visit [https://testnet.binancefuture.com](https://testnet.binancefuture.com), log in with GitHub,  
-> and generate an API key under **"API Key"** in the top menu.
+### 3. Install & Run
+Run the following commands to get everything up and running:
+```bash
+# 1. Install dependencies
+npm install
+
+# 2. Start Infrastructure (Postgres & Redis)
+docker-compose up -d
+
+# 3. Synchronize Database Schema
+npm run prisma:generate
+npm run prisma:push
+
+# 4. Start concurrent dev environment (Next + Nest)
+npm run dev
+```
+
+- **Frontend**: [http://localhost:3000](http://localhost:3000)
+- **API Server**: [http://localhost:3001](http://localhost:3001)
 
 ---
 
-## 🚀 Running the Application
+## 🏗️ Architecture Explanation
 
-This project provides **three distinct ways** to interact with the Binance Testnet. Choose the one that best fits your workflow:
+The project uses a **Unified Full-Stack Architecture** to minimize context switching and maximize shared logic.
 
-### Option 1: Direct CLI Commands
-**Best for:** Automation and quick status checks.
-- **Command:** `python cli.py <command> [options]`
-- **What happens:** The bot executes the specific command, prints the result to your terminal, and exits.
-- **Examples:**
-  ```bash
-  # Check your testnet wallet balance
-  python cli.py account
-  
-  # Place a Market Buy
-  python cli.py place-order --symbol BTCUSDT --side BUY --type MARKET --qty 0.01
-  ```
-
-### Option 2: Interactive CLI Menu (Bonus)
-**Best for:** Users who want a guided experience without typing long flags.
-- **Command:** `python cli.py menu`
-- **What happens:** A text-based menu opens in your terminal. It will prompt you step-by-step for the symbol, side, and quantity. You don't need to remember any flags.
-- **How to exit:** Choose option `0` from the menu.
-
-### Option 3: Web Dashboard (Bonus)
-**Best for:** Visual monitoring and a modern trading interface.
-- **Command:** `python server.py`
-- **What happens:** A local web server starts on your machine.
-- **How to view:** Open your browser and go to **[http://127.0.0.1:5000](http://127.0.0.1:5000)**.
-- **Features:** A dark-mode dashboard showing live stats, open positions, and a "Place Order" button.
+- **Backend (NestJS)**: 
+  - Follows a modular structure (`src/auth`, `src/blogs`, `src/users`).
+  - Utilizes **Prisma** for type-safe database queries.
+  - Implements **BullMQ** for background job processing, ensuring the API stays responsive.
+  - Uses **Pino** for structured logging suitable for production environments.
+- **Frontend (Next.js 15)**: 
+  - Located in `src/app`, utilizing the **App Router**.
+  - **TanStack Query (React Query)** manages all server state, caching, and optimistic UI updates.
+  - **Framer Motion** provides the smooth, premium transitions requested.
+- **Domain Layer**: Centralized types in `src/lib/types.ts` ensure the frontend and backend strictly adhere to the same data contracts.
 
 ---
 
-## Logging
-All activity is logged to **`logs/trading_bot.log`** (rotating, max 10 MB, 5 backups).  
-Console output uses colour-coded log levels.
+## ⚖️ Tradeoffs Made
 
-Log entries include:
-- Every API request (method, endpoint, parameters — signature redacted)
-- Full API responses at DEBUG level
-- All errors with context
+1. **Unified Root vs. Monorepo (Nx/Turborepo)**: I chose a unified project structure to keep the setup trivial for the user. While separate packages are cleaner for huge teams, a unified root allows for instant shared types without complex workspace configurations.
+2. **Prisma vs. Raw SQL/Kysely**: Prisma was chosen for developer velocity. It abstracts complex relations (like likes/comments) elegantly, though it adds a small overhead compared to raw SQL.
+3. **Internal Base64 vs. Object Storage**: For this version, images are handled as Base64 strings to avoid requiring an S3/Cloudinary account for setup. In a production scenario, we would switch to a dedicated CDN.
 
 ---
 
-## Error Handling
+## 🛠️ What I Would Improve
 
-| Error type | CLI behaviour | Web behaviour |
-|---|---|---|
-| Invalid input | Message + exit 1 | Flash message, stay on form |
-| API error (4xx/5xx) | Error code + message | Flash message |
-| Network failure | Human-readable message | Flash message |
-| Missing credentials | Startup error | Dashboard error banner |
+1. **Rich Text Editor**: Replace the standard `textarea` with a proper block-based editor like **Tiptap** or **Editor.js** for a premium writing experience.
+2. **Server-Side Rendering (SSR)**: Currently, most data fetching is client-side. Using SSR for the Public Feed would improve SEO and Initial Page Load speed.
+3. **Security**: Move JWT from LocalStorage to **HttpOnly Cookies** to prevent XSS-based token theft.
+4. **Testing Suite**: Implement full E2E testing using **Playwright** and unit tests for the NestJS services.
 
 ---
 
-## Assumptions
+## � Scaling to 1M Users
 
-- Only **USDT-M Perpetual Futures (Testnet)** are supported.  
-- Credentials are read from `.env` or existing environment variables.  
-- Quantity/price precision is passed as-is — Binance rejects values that violate a symbol's step-size rules. Use common round values for testnet.  
-- Web UI order history is in-process only (resets on server restart — this is a testnet tool, not production persistence).
+To handle 1,000,000 concurrent or frequent users, the architecture would evolve as follows:
 
----
-
-## Requirements
-
-- Python 3.9+
-- `httpx` — HTTP client with HMAC signing support
-- `python-dotenv` — `.env` file loading
-- `Flask` — lightweight web framework (for the web UI)
+1. **Database Scaling**:
+   - Implement **Read Replicas** for Postgres to handle the heavy read load of a public feed.
+   - Use **Database Indexing** optimized for text search (e.g., GIN index for content).
+2. **Caching Strategy**:
+   - Add a heavy **Redis caching layer** for "hot" blog posts to avoid hitting the DB for every pageload.
+   - Move to **Edge Caching (Vercel/Cloudflare)** for the public blog URLs.
+3. **Media Management**:
+   - Move all images to **Amazon S3** and serve them via **CloudFront CDN** to offload the main API server.
+4. **Horizontal Scaling**:
+   - Containerize the NestJS backend and deploy it on a **Kubernetes Cluster** with an auto-scaler.
+   - Separate the **BullMQ Workers** into their own microservices so they can scale independently from the API.
+5. **Load Balancing**:
+   - Use an **Nginx** or **AWS ALB** for efficient traffic distribution.
