@@ -1,24 +1,29 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { blogApi } from '@/lib/api';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2, Image as ImageIcon, Smile, X } from 'lucide-react';
+import { Loader2, Image as ImageIcon, Smile, X, Check, Cloud } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
 import { IconButton } from '@/components/ui/icon-button';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDebounce } from '@/hooks/use-debounce';
-import { Check, Cloud } from 'lucide-react';
+import { EmojiPicker } from '@/components/ui/emoji-picker';
 
-const EMOJIS = ['❤️', '🔥', '✨', '🙌', '🚀', '🤔', '👀', '💡', '✍️', '🖤'];
+type ActiveField = 'title' | 'content';
 
 export default function EditBlogPage() {
     const { user } = useAuth();
     const router = useRouter();
     const { id } = useParams() as { id: string };
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const titleRef = useRef<HTMLInputElement>(null);
+    const contentRef = useRef<HTMLTextAreaElement>(null);
+    const titleCursorRef = useRef<number>(0);
+    const contentCursorRef = useRef<number>(0);
+    const [activeField, setActiveField] = useState<ActiveField>('content');
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
     const [imageUrl, setImageUrl] = useState<string | undefined>(undefined);
@@ -91,10 +96,34 @@ export default function EditBlogPage() {
         }
     };
 
-    const addEmoji = (emoji: string) => {
-        setContent(prev => prev + emoji);
+    const insertEmoji = useCallback((emoji: string) => {
+        if (activeField === 'title') {
+            const pos = titleCursorRef.current;
+            const newVal = title.slice(0, pos) + emoji + title.slice(pos);
+            setTitle(newVal);
+            requestAnimationFrame(() => {
+                if (titleRef.current) {
+                    titleRef.current.selectionStart = pos + emoji.length;
+                    titleRef.current.selectionEnd = pos + emoji.length;
+                    titleRef.current.focus();
+                }
+            });
+            titleCursorRef.current = pos + emoji.length;
+        } else {
+            const pos = contentCursorRef.current;
+            const newVal = content.slice(0, pos) + emoji + content.slice(pos);
+            setContent(newVal);
+            requestAnimationFrame(() => {
+                if (contentRef.current) {
+                    contentRef.current.selectionStart = pos + emoji.length;
+                    contentRef.current.selectionEnd = pos + emoji.length;
+                    contentRef.current.focus();
+                }
+            });
+            contentCursorRef.current = pos + emoji.length;
+        }
         setShowEmojiPicker(false);
-    };
+    }, [activeField, title, content]);
 
     if (isLoading) {
         return (
@@ -148,17 +177,25 @@ export default function EditBlogPage() {
 
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <input
+                            ref={titleRef}
                             type="text"
                             placeholder="Blog Title"
                             value={title}
                             onChange={e => setTitle(e.target.value)}
+                            onFocus={() => setActiveField('title')}
+                            onSelect={() => { titleCursorRef.current = titleRef.current?.selectionStart ?? 0; }}
+                            onKeyUp={() => { titleCursorRef.current = titleRef.current?.selectionStart ?? 0; }}
                             className="w-full bg-transparent border-none text-2xl font-bold text-white outline-none placeholder:text-neutral-700 p-0"
                         />
 
                         <textarea
+                            ref={contentRef}
                             placeholder="What's happening?"
                             value={content}
                             onChange={e => setContent(e.target.value)}
+                            onFocus={() => setActiveField('content')}
+                            onSelect={() => { contentCursorRef.current = contentRef.current?.selectionStart ?? 0; }}
+                            onKeyUp={() => { contentCursorRef.current = contentRef.current?.selectionStart ?? 0; }}
                             className="w-full bg-transparent border-none text-lg text-neutral-200 outline-none resize-none min-h-[300px] leading-relaxed placeholder:text-neutral-700 p-0"
                         />
 
@@ -191,23 +228,18 @@ export default function EditBlogPage() {
                                 <div className="relative">
                                     <IconButton
                                         icon={<Smile className="w-5 h-5" />}
-                                        onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                                        onClick={() => setShowEmojiPicker(v => !v)}
                                     />
                                     {showEmojiPicker && (
-                                        <div className="absolute bottom-full left-0 mb-2 bg-neutral-950 border border-neutral-900 rounded-2xl p-3 flex flex-wrap gap-2 w-48 z-50 shadow-2xl">
-                                            {EMOJIS.map(emoji => (
-                                                <button
-                                                    key={emoji}
-                                                    type="button"
-                                                    onClick={() => addEmoji(emoji)}
-                                                    className="text-xl hover:scale-125 transition-transform p-1.5"
-                                                >
-                                                    {emoji}
-                                                </button>
-                                            ))}
-                                        </div>
+                                        <EmojiPicker
+                                            onSelect={insertEmoji}
+                                            onClose={() => setShowEmojiPicker(false)}
+                                        />
                                     )}
                                 </div>
+                                <span className="text-[10px] text-neutral-700 ml-1 font-medium">
+                                    → {activeField === 'title' ? 'Title' : 'Content'}
+                                </span>
                             </div>
 
                             <div className="flex gap-3">

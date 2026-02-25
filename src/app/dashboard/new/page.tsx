@@ -1,26 +1,34 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { blogApi } from '@/lib/api';
 import { Loader2, Image as ImageIcon, Smile, X } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
 import { IconButton } from '@/components/ui/icon-button';
-
-const EMOJIS = ['❤️', '🔥', '✨', '🙌', '🚀', '🤔', '👀', '💡', '✍️', '🖤'];
-
 import { motion } from 'framer-motion';
 import { calculateReadingTime } from '@/lib/utils';
+import { EmojiPicker } from '@/components/ui/emoji-picker';
+
+type ActiveField = 'title' | 'content' | null;
 
 export default function NewBlogPage() {
     const { user } = useAuth();
     const router = useRouter();
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const titleRef = useRef<HTMLInputElement>(null);
+    const contentRef = useRef<HTMLTextAreaElement>(null);
+
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
     const [imageUrl, setImageUrl] = useState<string | undefined>(undefined);
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+    const [activeField, setActiveField] = useState<ActiveField>('content');
     const [loading, setLoading] = useState(false);
+
+    // Track cursor position for insertion
+    const titleCursorRef = useRef<number>(0);
+    const contentCursorRef = useRef<number>(0);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -40,17 +48,41 @@ export default function NewBlogPage() {
         const file = e.target.files?.[0];
         if (file) {
             const reader = new FileReader();
-            reader.onloadend = () => {
-                setImageUrl(reader.result as string);
-            };
+            reader.onloadend = () => setImageUrl(reader.result as string);
             reader.readAsDataURL(file);
         }
     };
 
-    const addEmoji = (emoji: string) => {
-        setContent(prev => prev + emoji);
+    // Insert emoji at the current cursor position in the active field
+    const insertEmoji = useCallback((emoji: string) => {
+        if (activeField === 'title') {
+            const pos = titleCursorRef.current;
+            const newVal = title.slice(0, pos) + emoji + title.slice(pos);
+            setTitle(newVal);
+            // Restore cursor after state update
+            requestAnimationFrame(() => {
+                if (titleRef.current) {
+                    titleRef.current.selectionStart = pos + emoji.length;
+                    titleRef.current.selectionEnd = pos + emoji.length;
+                    titleRef.current.focus();
+                }
+            });
+            titleCursorRef.current = pos + emoji.length;
+        } else {
+            const pos = contentCursorRef.current;
+            const newVal = content.slice(0, pos) + emoji + content.slice(pos);
+            setContent(newVal);
+            requestAnimationFrame(() => {
+                if (contentRef.current) {
+                    contentRef.current.selectionStart = pos + emoji.length;
+                    contentRef.current.selectionEnd = pos + emoji.length;
+                    contentRef.current.focus();
+                }
+            });
+            contentCursorRef.current = pos + emoji.length;
+        }
         setShowEmojiPicker(false);
-    };
+    }, [activeField, title, content]);
 
     return (
         <motion.div
@@ -64,21 +96,32 @@ export default function NewBlogPage() {
                 </div>
 
                 <form onSubmit={handleSubmit} className="flex-1 space-y-4">
+                    {/* Title */}
                     <input
+                        ref={titleRef}
                         type="text"
                         placeholder="Blog Title"
                         value={title}
                         onChange={e => setTitle(e.target.value)}
+                        onFocus={() => setActiveField('title')}
+                        onSelect={() => { titleCursorRef.current = titleRef.current?.selectionStart ?? 0; }}
+                        onKeyUp={() => { titleCursorRef.current = titleRef.current?.selectionStart ?? 0; }}
                         className="w-full bg-transparent border-none text-2xl font-bold text-white outline-none placeholder:text-neutral-700 p-0"
                     />
 
+                    {/* Content */}
                     <textarea
-                        placeholder="What's happening?"
+                        ref={contentRef}
+                        placeholder="What's on your mind?"
                         value={content}
                         onChange={e => setContent(e.target.value)}
+                        onFocus={() => setActiveField('content')}
+                        onSelect={() => { contentCursorRef.current = contentRef.current?.selectionStart ?? 0; }}
+                        onKeyUp={() => { contentCursorRef.current = contentRef.current?.selectionStart ?? 0; }}
                         className="w-full bg-transparent border-none text-lg text-neutral-200 outline-none resize-none min-h-[300px] leading-relaxed placeholder:text-neutral-700 p-0"
                     />
 
+                    {/* Image Preview */}
                     {imageUrl && (
                         <div className="relative rounded-2xl overflow-hidden border border-neutral-900 mt-2">
                             <button
@@ -92,6 +135,7 @@ export default function NewBlogPage() {
                         </div>
                     )}
 
+                    {/* Footer Toolbar */}
                     <div className="flex items-center justify-between pt-4 border-t border-neutral-900">
                         <div className="flex items-center gap-1">
                             <input
@@ -105,26 +149,25 @@ export default function NewBlogPage() {
                                 icon={<ImageIcon className="w-5 h-5" />}
                                 onClick={() => fileInputRef.current?.click()}
                             />
+
+                            {/* Emoji Picker trigger */}
                             <div className="relative">
                                 <IconButton
                                     icon={<Smile className="w-5 h-5" />}
-                                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                                    onClick={() => setShowEmojiPicker(v => !v)}
                                 />
                                 {showEmojiPicker && (
-                                    <div className="absolute bottom-full left-0 mb-2 bg-neutral-950 border border-neutral-900 rounded-2xl p-3 flex flex-wrap gap-2 w-48 z-50 shadow-2xl">
-                                        {EMOJIS.map(emoji => (
-                                            <button
-                                                key={emoji}
-                                                type="button"
-                                                onClick={() => addEmoji(emoji)}
-                                                className="text-xl hover:scale-125 transition-transform p-1.5"
-                                            >
-                                                {emoji}
-                                            </button>
-                                        ))}
-                                    </div>
+                                    <EmojiPicker
+                                        onSelect={insertEmoji}
+                                        onClose={() => setShowEmojiPicker(false)}
+                                    />
                                 )}
                             </div>
+
+                            {/* Active field hint */}
+                            <span className="text-[10px] text-neutral-700 ml-1 font-medium">
+                                → {activeField === 'title' ? 'Title' : 'Content'}
+                            </span>
                         </div>
 
                         <div className="flex items-center gap-4">
@@ -147,5 +190,3 @@ export default function NewBlogPage() {
         </motion.div>
     );
 }
-
-
