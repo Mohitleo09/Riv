@@ -6,10 +6,19 @@ import { useAuth } from '@/context/auth-context';
 import { useRouter } from 'next/navigation';
 import { Blog, FeedResponse } from '@/lib/types';
 
-export function useLikeBlog(blog: Blog, contextPath?: string) {
+export function useLikeBlog(blog: Blog) {
     const { user } = useAuth();
     const router = useRouter();
     const queryClient = useQueryClient();
+
+    const updateBlog = (b: Blog): Blog => ({
+        ...b,
+        likedByMe: !b.likedByMe,
+        _count: {
+            ...b._count,
+            likes: b._count.likes + (b.likedByMe ? -1 : 1),
+        },
+    });
 
     return useMutation({
         mutationFn: () => blog.likedByMe ? blogApi.unlikeBlog(blog.id) : blogApi.likeBlog(blog.id),
@@ -19,66 +28,37 @@ export function useLikeBlog(blog: Blog, contextPath?: string) {
                 return;
             }
 
-            // Update specific query keys based on where this is used
-            const queries = [
-                ['feed', user?.id],
-                ['blog', blog.slug, user?.id],
-                ['myBlogs']
-            ];
+            const feedKey = ['feed', user?.id];
+            const blogKey = ['blog', blog.slug, user?.id];
+            const myBlogsKey = ['myBlogs'];
 
-            for (const key of queries) {
-                await queryClient.cancelQueries({ queryKey: key });
-                const previousData = queryClient.getQueryData(key);
+            await queryClient.cancelQueries({ queryKey: feedKey });
+            await queryClient.cancelQueries({ queryKey: blogKey });
+            await queryClient.cancelQueries({ queryKey: myBlogsKey });
 
-                if (key[0] === 'feed') {
-                    queryClient.setQueryData<InfiniteData<FeedResponse>>(key, (old) => {
-                        if (!old) return old;
-                        return {
-                            ...old,
-                            pages: old.pages.map((page) => ({
-                                ...page,
-                                data: page.data.map((b) => {
-                                    if (b.id === blog.id) {
-                                        return {
-                                            ...b,
-                                            likedByMe: !b.likedByMe,
-                                            _count: {
-                                                ...b._count,
-                                                likes: b._count.likes + (b.likedByMe ? -1 : 1)
-                                            }
-                                        };
-                                    }
-                                    return b;
-                                })
-                            }))
-                        };
-                    });
-                } else if (key[0] === 'blog') {
-                    queryClient.setQueryData<Blog>(key, (old) => {
-                        if (!old) return old;
-                        return {
-                            ...old,
-                            likedByMe: !old.likedByMe,
-                            _count: {
-                                ...old._count,
-                                likes: old._count.likes + (old.likedByMe ? -1 : 1)
-                            }
-                        };
-                    });
-                } else if (key[0] === 'myBlogs') {
-                    queryClient.setQueryData<Blog[]>(key, (old) => {
-                        if (!old) return old;
-                        return old.map(b => b.id === blog.id ? {
-                            ...b,
-                            likedByMe: !b.likedByMe,
-                            _count: {
-                                ...b._count,
-                                likes: b._count.likes + (b.likedByMe ? -1 : 1)
-                            }
-                        } : b);
-                    });
-                }
-            }
+            // Update the infinite feed query
+            queryClient.setQueryData<InfiniteData<FeedResponse>>(feedKey, (old) => {
+                if (!old) return old;
+                return {
+                    ...old,
+                    pages: old.pages.map((page) => ({
+                        ...page,
+                        data: page.data.map((b) => b.id === blog.id ? updateBlog(b) : b),
+                    })),
+                };
+            });
+
+            // Update the single blog detail query
+            queryClient.setQueryData<Blog>(blogKey, (old) => {
+                if (!old) return old;
+                return updateBlog(old);
+            });
+
+            // Update the myBlogs flat array query (used on profile page)
+            queryClient.setQueryData<Blog[]>(myBlogsKey, (old) => {
+                if (!old) return old;
+                return old.map(b => b.id === blog.id ? updateBlog(b) : b);
+            });
         },
         onSettled: () => {
             queryClient.invalidateQueries({ queryKey: ['feed', user?.id] });

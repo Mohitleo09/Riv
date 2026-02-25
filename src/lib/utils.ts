@@ -1,3 +1,10 @@
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+export function cn(...inputs: ClassValue[]) {
+    return twMerge(clsx(inputs));
+}
+
 export function calculateReadingTime(text: string): number {
     const wordsPerMinute = 225; // Average reading speed
     const words = text.trim().split(/\s+/).length;
