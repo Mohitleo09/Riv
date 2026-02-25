@@ -10,6 +10,7 @@ import { IconButton } from '@/components/ui/icon-button';
 const EMOJIS = ['❤️', '🔥', '✨', '🙌', '🚀', '🤔', '👀', '💡', '✍️', '🖤'];
 
 import { motion } from 'framer-motion';
+import { calculateReadingTime } from '@/lib/utils';
 
 export default function NewBlogPage() {
     const { user } = useAuth();
@@ -126,13 +127,20 @@ export default function NewBlogPage() {
                             </div>
                         </div>
 
-                        <button
-                            type="submit"
-                            disabled={!title.trim() || !content.trim() || loading}
-                            className="bg-white text-black px-8 py-2.5 rounded-full text-sm font-bold disabled:opacity-50 hover:bg-neutral-200 transition-colors flex items-center gap-2"
-                        >
-                            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Publish'}
-                        </button>
+                        <div className="flex items-center gap-4">
+                            {content.length > 0 && (
+                                <span className="text-[11px] font-bold uppercase tracking-widest text-neutral-600">
+                                    {calculateReadingTime(content)} MIN READ
+                                </span>
+                            )}
+                            <button
+                                type="submit"
+                                disabled={!title.trim() || !content.trim() || loading}
+                                className="bg-white text-black px-8 py-2.5 rounded-full text-sm font-bold disabled:opacity-50 hover:bg-neutral-200 transition-colors flex items-center gap-2"
+                            >
+                                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Publish'}
+                            </button>
+                        </div>
                     </div>
                 </form>
             </div>

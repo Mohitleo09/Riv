@@ -7,7 +7,8 @@ import { ActivityHeatmap } from '@/components/ui/activity-heatmap';
 import BlogCard from '@/components/blog/blog-card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { motion } from 'framer-motion';
-import { FileText, Heart, Globe } from 'lucide-react';
+import { FileText, Heart, Globe, Zap, BarChart3, Target } from 'lucide-react';
+import { calculateStreak, calculateEngagementScore } from '@/lib/utils';
 
 export default function ProfilePage() {
     const { user } = useAuth();
@@ -54,6 +55,66 @@ export default function ProfilePage() {
                     </div>
                 </div>
             </header>
+
+            {/* Writer Insights */}
+            <section className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.1 }}
+                    className="bg-neutral-900/40 border border-neutral-900 rounded-3xl p-6 relative overflow-hidden group"
+                >
+                    <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                        <Zap className="w-20 h-20 text-yellow-500" />
+                    </div>
+                    <div className="flex items-center gap-2 text-yellow-500 mb-2">
+                        <Zap className="w-4 h-4" />
+                        <span className="text-[10px] font-bold uppercase tracking-widest">Writing Streak</span>
+                    </div>
+                    <div className="text-4xl font-bold tracking-tighter mb-1">
+                        {calculateStreak(blogs?.map(b => b.createdAt) || [])} Days
+                    </div>
+                    <p className="text-neutral-500 text-xs font-medium">Consecutive writing days</p>
+                </motion.div>
+
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.2 }}
+                    className="bg-neutral-900/40 border border-neutral-900 rounded-3xl p-6 relative overflow-hidden group"
+                >
+                    <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                        <BarChart3 className="w-20 h-20 text-purple-500" />
+                    </div>
+                    <div className="flex items-center gap-2 text-purple-500 mb-2">
+                        <BarChart3 className="w-4 h-4" />
+                        <span className="text-[10px] font-bold uppercase tracking-widest">Engagement Engine</span>
+                    </div>
+                    <div className="text-4xl font-bold tracking-tighter mb-1">
+                        {blogs?.reduce((acc, b) => acc + calculateEngagementScore(b._count.likes, b._count.comments), 0) || 0}
+                    </div>
+                    <p className="text-neutral-500 text-xs font-medium">Weighted interaction score</p>
+                </motion.div>
+
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.3 }}
+                    className="bg-neutral-900/40 border border-neutral-900 rounded-3xl p-6 relative overflow-hidden group"
+                >
+                    <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                        <Target className="w-20 h-20 text-blue-500" />
+                    </div>
+                    <div className="flex items-center gap-2 text-blue-500 mb-2">
+                        <Target className="w-4 h-4" />
+                        <span className="text-[10px] font-bold uppercase tracking-widest">Global Rank</span>
+                    </div>
+                    <div className="text-4xl font-bold tracking-tighter mb-1">
+                        Top 5%
+                    </div>
+                    <p className="text-neutral-500 text-xs font-medium">Among creative writers</p>
+                </motion.div>
+            </section>
 
             {/* Activity Pulse */}
             <section className="mb-20">

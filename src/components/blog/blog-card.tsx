@@ -14,6 +14,7 @@ import { Blog, Comment } from '@/lib/types';
 import { LikeButton } from './like-button';
 import { CommentItem } from './comment-item';
 import { BlurImage } from '@/components/ui/blur-image';
+import { calculateReadingTime } from '@/lib/utils';
 
 interface BlogCardProps {
     blog: Blog;
@@ -75,6 +76,10 @@ export default function BlogCard({ blog }: BlogCardProps) {
                             <span className="text-neutral-500">·</span>
                             <span className="text-neutral-500">
                                 {format(new Date(blog.createdAt), 'MMM d')}
+                            </span>
+                            <span className="text-neutral-500">·</span>
+                            <span className="text-neutral-600 font-medium">
+                                {calculateReadingTime(blog.content)} min read
                             </span>
                         </div>
                         <IconButton icon={<MoreHorizontal className="w-4 h-4" />} className="p-1" />
