@@ -13,6 +13,7 @@ import { IconButton } from '@/components/ui/icon-button';
 import { Blog, Comment } from '@/lib/types';
 import { LikeButton } from './like-button';
 import { CommentItem } from './comment-item';
+import { BlurImage } from '@/components/ui/blur-image';
 
 interface BlogCardProps {
     blog: Blog;
@@ -61,7 +62,7 @@ export default function BlogCard({ blog }: BlogCardProps) {
             <div className="flex gap-4">
                 {/* Avatar Placeholder */}
                 <div className="w-10 h-10 rounded-full bg-neutral-900 flex-shrink-0 flex items-center justify-center text-xs font-bold text-neutral-500">
-                    {blog.user.email[0].toUpperCase()}
+                    {blog.user?.email?.[0].toUpperCase() || '?'}
                 </div>
 
                 <div className="flex-1 min-w-0">
@@ -69,7 +70,7 @@ export default function BlogCard({ blog }: BlogCardProps) {
                     <div className="flex items-center justify-between mb-1">
                         <div className="flex items-center gap-1.5 text-sm">
                             <span className="font-bold text-white hover:underline cursor-pointer">
-                                {blog.user.email.split('@')[0]}
+                                {blog.user?.email?.split('@')[0] || 'User'}
                             </span>
                             <span className="text-neutral-500">·</span>
                             <span className="text-neutral-500">
@@ -89,7 +90,10 @@ export default function BlogCard({ blog }: BlogCardProps) {
                         </p>
                         {blog.imageUrl && (
                             <div className="mt-3 rounded-2xl overflow-hidden border border-neutral-900 bg-neutral-950">
-                                <img src={blog.imageUrl} alt="" className="w-full h-auto object-cover max-h-[500px]" />
+                                <BlurImage
+                                    src={blog.imageUrl}
+                                    className="max-h-[500px]"
+                                />
                             </div>
                         )}
                     </Link>

@@ -102,12 +102,20 @@ export class BlogsService {
         };
     }
 
-    async getFeed(page = 1, limit = 10, userId?: string) {
+    async getFeed(page = 1, limit = 10, userId?: string, search?: string) {
         const skip = (page - 1) * limit;
+
+        const where: any = { isPublished: true };
+        if (search) {
+            where.OR = [
+                { title: { contains: search, mode: 'insensitive' } },
+                { content: { contains: search, mode: 'insensitive' } },
+            ];
+        }
 
         const [blogs, total] = await Promise.all([
             this.prisma.blog.findMany({
-                where: { isPublished: true },
+                where,
                 orderBy: { createdAt: 'desc' },
                 skip,
                 take: limit,
@@ -137,7 +145,7 @@ export class BlogsService {
                     },
                 },
             } as any),
-            this.prisma.blog.count({ where: { isPublished: true } }),
+            this.prisma.blog.count({ where }),
         ]);
 
         const data = blogs.map(blog => ({
@@ -161,6 +169,9 @@ export class BlogsService {
         return this.prisma.blog.findUnique({
             where: { id },
             include: {
+                user: {
+                    select: { id: true, email: true },
+                },
                 _count: {
                     select: {
                         likes: true,
@@ -176,6 +187,9 @@ export class BlogsService {
             where: { userId },
             orderBy: { createdAt: 'desc' },
             include: {
+                user: {
+                    select: { id: true, email: true },
+                },
                 _count: {
                     select: {
                         likes: true,

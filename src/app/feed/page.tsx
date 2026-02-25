@@ -9,10 +9,16 @@ import { useAuth } from '@/context/auth-context';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Blog } from '@/lib/types';
 import { CreatePost } from '@/components/blog/create-post';
+import { useState } from 'react';
+import { useDebounce } from '@/hooks/use-debounce';
+import { Search } from 'lucide-react';
 
 export default function FeedPage() {
     const { user } = useAuth();
     const observerTarget = useRef(null);
+
+    const [search, setSearch] = useState('');
+    const debouncedSearch = useDebounce(search, 400);
 
     const {
         data,
@@ -21,8 +27,8 @@ export default function FeedPage() {
         isFetchingNextPage,
         isLoading,
     } = useInfiniteQuery({
-        queryKey: ['feed', user?.id],
-        queryFn: ({ pageParam = 1 }) => blogApi.getFeed(pageParam as number, 10).then(res => res.data),
+        queryKey: ['feed', user?.id, debouncedSearch],
+        queryFn: ({ pageParam = 1 }) => blogApi.getFeed(pageParam as number, 10, debouncedSearch).then(res => res.data),
         getNextPageParam: (lastPage) => {
             if (lastPage.meta.page < lastPage.meta.totalPages) {
                 return lastPage.meta.page + 1;
@@ -58,6 +64,20 @@ export default function FeedPage() {
 
     return (
         <div className="max-w-3xl mx-auto border-x border-neutral-900 min-h-screen">
+            {/* Search Header */}
+            <div className="sticky top-16 bg-black/80 backdrop-blur-md z-40 border-b border-neutral-900 px-4 py-3">
+                <div className="relative group">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-600 group-focus-within:text-white transition-colors" />
+                    <input
+                        type="text"
+                        placeholder="Search posts..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="w-full bg-neutral-900 border-none rounded-full py-2 pl-10 pr-4 text-sm text-white placeholder:text-neutral-600 outline-none focus:ring-1 focus:ring-neutral-800 transition-all"
+                    />
+                </div>
+            </div>
+
             {/* Create Post Area */}
             <CreatePost />
 

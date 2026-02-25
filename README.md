@@ -7,6 +7,10 @@ Rival is a production-grade, full-stack blog platform designed for minimalist, l
 - **Consolidated Architecture**: Unified Next.js 15 and NestJS codebase.
 - **Advanced Authentication**: Dual-token strategy (Access + Refresh tokens) with rotation and server-side revocation.
 - **RBAC (Role-Based Access Control)**: Granular permission management with roles (USER, ADMIN).
+- **Search & Discovery**: Fast-filtering search bar with debounced full-text search across titles and content.
+- **Auto-Saving Editor**: Intelligent background persistence with smooth Framer Motion status indicators.
+- **Activity Pulse**: Real-time contribution heatmap visualization for tracking creative momentum over 30 days.
+- **Performance Image Loading**: Custom `BlurImage` component for optimized, shimmer-loaded background images.
 - **Social Interaction**: Real-time liked-by-me states and nested comment threads with optimistic UI.
 - **Async Processing**: BullMQ/Redis for background summarization and potential email tasks.
 - **Type Safety**: Shared domain models between backend and frontend.

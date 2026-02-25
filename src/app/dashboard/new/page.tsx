@@ -9,6 +9,8 @@ import { IconButton } from '@/components/ui/icon-button';
 
 const EMOJIS = ['❤️', '🔥', '✨', '🙌', '🚀', '🤔', '👀', '💡', '✍️', '🖤'];
 
+import { motion } from 'framer-motion';
+
 export default function NewBlogPage() {
     const { user } = useAuth();
     const router = useRouter();
@@ -50,7 +52,11 @@ export default function NewBlogPage() {
     };
 
     return (
-        <div className="max-w-2xl mx-auto py-8 md:py-12 px-4 md:px-6">
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="max-w-2xl mx-auto py-8 md:py-12 px-4 md:px-6"
+        >
             <div className="flex gap-3 md:gap-4">
                 <div className="hidden sm:flex w-12 h-12 rounded-full bg-neutral-900 shrink-0 items-center justify-center text-sm font-bold text-neutral-500">
                     {user?.email?.[0].toUpperCase() || 'R'}
@@ -130,7 +136,7 @@ export default function NewBlogPage() {
                     </div>
                 </form>
             </div>
-        </div>
+        </motion.div>
     );
 }
 

@@ -1,12 +1,9 @@
 @import "tailwindcss";
 
-@theme {
-    --color-like: #ef4444;
-}
-
 :root {
     --background: 0 0% 0%;
     --foreground: 0 0% 100%;
+    --color-like: #ef4444;
 }
 
 * {
@@ -38,6 +35,24 @@ body {
 ::-webkit-scrollbar-thumb {
     background: #1a1a1a;
     border-radius: 10px;
+}
+
+@keyframes shimmer {
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+.glass {
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.glass-light {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
 }
 
 ::-webkit-scrollbar-thumb:hover {

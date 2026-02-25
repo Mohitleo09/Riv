@@ -44,14 +44,17 @@ export default function Navbar() {
                     </div>
                 ) : user ? (
                     <>
-                        <div className="hidden sm:flex items-center gap-2 pr-2 border-r border-neutral-800">
-                            <div className="w-6 h-6 rounded-full bg-neutral-900 flex items-center justify-center text-[10px] font-bold text-neutral-500">
+                        <Link
+                            href="/profile"
+                            className="hidden sm:flex items-center gap-2 pr-2 border-r border-neutral-800 group/nav"
+                        >
+                            <div className="w-6 h-6 rounded-full bg-neutral-900 flex items-center justify-center text-[10px] font-bold text-neutral-500 group-hover/nav:bg-neutral-800 transition-colors">
                                 {user.email[0].toUpperCase()}
                             </div>
-                            <span className="text-xs font-medium text-neutral-400 truncate max-w-[80px]">
+                            <span className="text-xs font-medium text-neutral-400 truncate max-w-[80px] group-hover/nav:text-white transition-colors">
                                 {user.email.split('@')[0]}
                             </span>
-                        </div>
+                        </Link>
                         <button
                             onClick={() => logout()}
                             className="text-[10px] md:text-xs uppercase tracking-widest font-bold text-neutral-500 hover:text-white transition-colors"

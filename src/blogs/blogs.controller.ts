@@ -89,11 +89,13 @@ export class BlogsController {
         @Request() req: AuthenticatedRequest,
         @Query('page') page?: string,
         @Query('limit') limit?: string,
+        @Query('q') search?: string,
     ) {
         return this.blogsService.getFeed(
             page ? parseInt(page) : 1,
             limit ? parseInt(limit) : 10,
-            req.user?.id
+            req.user?.id,
+            search
         );
     }
 

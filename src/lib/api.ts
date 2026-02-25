@@ -51,7 +51,10 @@ export const authApi = {
 };
 
 export const blogApi = {
-    getFeed: (page = 1, limit = 10) => api.get<FeedResponse>(`/public/feed?page=${page}&limit=${limit}`),
+    getFeed: (page = 1, limit = 10, search = '') => {
+        const query = search ? `&q=${encodeURIComponent(search)}` : '';
+        return api.get<FeedResponse>(`/public/feed?page=${page}&limit=${limit}${query}`);
+    },
     getMyBlogs: () => api.get<Blog[]>('/blogs/me'),
     getBlogById: (id: string) => api.get<Blog>(`/blogs/${id}`),
     getBlogBySlug: (slug: string) => api.get<Blog>(`/public/blogs/${slug}`),
