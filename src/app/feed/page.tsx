@@ -165,28 +165,6 @@ export default function FeedPage() {
                             activeTag={activeTag}
                         />
                     )}
-
-                    <div className="bg-neutral-950 border border-neutral-900 rounded-2xl p-5">
-                        <h3 className="text-sm font-bold uppercase tracking-widest text-neutral-400 mb-3">Platform Stats</h3>
-                        <div className="space-y-3 text-sm">
-                            <div className="flex justify-between text-neutral-500">
-                                <span>Total Posts</span>
-                                <span className="font-bold text-white">{data?.pages[0]?.meta.total || 0}</span>
-                            </div>
-                            <div className="flex justify-between text-neutral-500">
-                                <span>Writers</span>
-                                <span className="font-bold text-white">
-                                    {new Set(allBlogs.map(b => b.user?.id)).size}
-                                </span>
-                            </div>
-                            <div className="flex justify-between text-neutral-500">
-                                <span>Total Likes</span>
-                                <span className="font-bold text-white">
-                                    {allBlogs.reduce((acc, b) => acc + b._count.likes, 0)}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
                 </aside>
             </div>
         </div>
