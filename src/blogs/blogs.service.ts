@@ -71,7 +71,27 @@ export class BlogsService {
             throw new ForbiddenException('You do not own this blog');
         }
 
-        return this.prisma.blog.delete({ where: { id } });
+        // Delete all related data in a transaction to avoid foreign key violations
+        await this.prisma.$transaction([
+            // 1. Delete comment likes for all comments in this blog
+            this.prisma.commentLike.deleteMany({
+                where: { comment: { blogId: id } }
+            }),
+            // 2. Delete all comments in this blog
+            this.prisma.comment.deleteMany({
+                where: { blogId: id }
+            }),
+            // 3. Delete all likes for this blog
+            this.prisma.like.deleteMany({
+                where: { blogId: id }
+            }),
+            // 4. Finally delete the blog
+            this.prisma.blog.delete({
+                where: { id }
+            })
+        ]);
+
+        return { success: true };
     }
 
     async findPublicBySlug(slug: string, userId?: string) {
