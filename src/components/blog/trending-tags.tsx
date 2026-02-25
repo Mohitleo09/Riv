@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Blog } from '@/lib/types';
-import { TrendingUp, ChevronDown, RefreshCw, Hash } from 'lucide-react';
+import { TrendingUp, ChevronDown, RefreshCw, Hash, Radio } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface GoogleTrend {
@@ -11,6 +11,7 @@ interface GoogleTrend {
     posts: string;
     category: string;
     hashtag: string;
+    source?: 'reddit' | 'hn';
 }
 
 interface TrendingTagsProps {
@@ -73,6 +74,7 @@ export function TrendingTags({ blogs, onTagClick, activeTag }: TrendingTagsProps
     const { data, isLoading, isError, refetch } = useQuery<{
         trends: GoogleTrend[];
         hashtags: { tag: string; label: string; posts: string }[];
+        sources?: { reddit: boolean; hn: boolean };
         updatedAt: string | null;
     }>({
         queryKey: ['google-trends'],
@@ -129,8 +131,8 @@ export function TrendingTags({ blogs, onTagClick, activeTag }: TrendingTagsProps
                                 onClick={() => onTagClick(label === activeTag ? '' : label)}
                                 title={`${label} · ${posts}`}
                                 className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[12px] font-semibold transition-all ${activeTag === label
-                                        ? 'bg-white text-black'
-                                        : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700 hover:text-white'
+                                    ? 'bg-white text-black'
+                                    : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700 hover:text-white'
                                     }`}
                             >
                                 #{tag}
@@ -169,19 +171,34 @@ export function TrendingTags({ blogs, onTagClick, activeTag }: TrendingTagsProps
                             <TrendingUp className="w-3.5 h-3.5 text-neutral-400" />
                             <h3 className="text-[13px] font-bold text-white">What's happening</h3>
                         </div>
-                        {updatedAt && (
-                            <span className="text-[10px] text-neutral-700">Updated {updatedAt}</span>
-                        )}
+                        <div className="flex items-center gap-2">
+                            <span className="flex items-center gap-1 text-[10px] text-emerald-500 font-medium">
+                                <Radio className="w-2.5 h-2.5" /> Live
+                            </span>
+                            {updatedAt && (
+                                <span className="text-[10px] text-neutral-700">{updatedAt}</span>
+                            )}
+                        </div>
                     </div>
 
                     <div className="divide-y divide-neutral-800/50">
-                        {displayedTrends.map(({ topic, category, posts, hashtag }) => (
+                        {displayedTrends.map(({ topic, category, posts, hashtag, source }) => (
                             <button
                                 key={topic}
                                 onClick={() => onTagClick(topic === activeTag ? '' : topic)}
-                                className={`w-full text-left px-4 py-3 hover:bg-neutral-800/40 transition-colors ${activeTag === topic ? 'bg-neutral-800/60' : ''}`}
+                                className={`w-full text-left px-4 py-3 hover:bg-neutral-800/40 transition-colors group ${activeTag === topic ? 'bg-neutral-800/60' : ''}`}
                             >
-                                <p className="text-[10px] text-neutral-600 mb-0.5 uppercase tracking-wide">{category} · Trending</p>
+                                <div className="flex items-center justify-between mb-0.5">
+                                    <p className="text-[10px] text-neutral-600 uppercase tracking-wide">{category} · Trending</p>
+                                    {source && (
+                                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${source === 'reddit'
+                                                ? 'bg-orange-500/10 text-orange-500'
+                                                : 'bg-amber-500/10 text-amber-500'
+                                            }`}>
+                                            {source === 'reddit' ? 'Reddit' : 'HN'}
+                                        </span>
+                                    )}
+                                </div>
                                 <p className="text-[13px] font-bold text-white leading-snug">{topic}</p>
                                 <div className="flex items-center gap-2 mt-0.5">
                                     <p className="text-[11px] text-neutral-600">{posts}</p>
