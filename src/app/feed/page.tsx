@@ -158,13 +158,7 @@ export default function FeedPage() {
 
                 {/* Right Sidebar */}
                 <aside className="hidden lg:block w-72 shrink-0 pt-6 space-y-4 sticky top-16 self-start">
-                    {!isLoading && allBlogs.length > 0 && (
-                        <TrendingTags
-                            blogs={allBlogs}
-                            onTagClick={handleTagClick}
-                            activeTag={activeTag}
-                        />
-                    )}
+                    {!isLoading && <TrendingTags />}
                 </aside>
             </div>
         </div>
